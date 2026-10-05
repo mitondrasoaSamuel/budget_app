@@ -1,0 +1,18 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: ariary-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ariary
+      MYSQL_USER: ariary
+      MYSQL_PASSWORD: ariary
+    ports:
+      - "3306:3306"
+    volumes:
+      - ariary_mysql:/var/lib/mysql
+    command: ["--default-authentication-plugin=mysql_native_password", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+
+volumes:
+  ariary_mysql:

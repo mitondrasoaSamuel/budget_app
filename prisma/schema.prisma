@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum HouseholdMode {
+  personal
+  couple
+  enterprise
+}
+
+model User {
+  id           String            @id @default(cuid())
+  login        String            @unique @db.VarChar(64)
+  passwordHash String            @db.VarChar(255)
+  displayName  String            @db.VarChar(120)
+  photoUrl     String?           @db.LongText
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  memberships  WorkspaceMember[]
+  owned        Workspace[]       @relation("WorkspaceOwner")
+}
+
+model Workspace {
+  id           String            @id @default(cuid())
+  name         String            @db.VarChar(160)
+  mode         HouseholdMode     @default(personal)
+  branding     Json
+  settings     Json
+  ownerId      String
+  owner        User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  members      WorkspaceMember[]
+  budgets      BudgetMonth[]
+  transactions Transaction[]
+  goals        Goal[]
+  wallets      Wallet[]
+
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  workspaceId String
+  userId      String?
+  localId     String    @db.VarChar(32)
+  name        String    @db.VarChar(120)
+  role        String    @default("member") @db.VarChar(32)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, localId])
+  @@index([userId])
+}
+
+model BudgetMonth {
+  id          String    @id @default(cuid())
+  workspaceId String
+  month       String    @db.VarChar(7)
+  incomes     Json
+  pct         Json
+  envelopes   Json
+  closed      Boolean   @default(false)
+  createdFrom String    @default("new") @db.VarChar(32)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, month])
+}
+
+model Transaction {
+  id          String    @id @default(cuid())
+  workspaceId String
+  month       String    @db.VarChar(7)
+  date        String    @db.VarChar(10)
+  amount      Int
+  cat         String    @db.VarChar(64)
+  envId       String?   @db.VarChar(64)
+  desc        String    @db.VarChar(255)
+  planned     Boolean   @default(true)
+  method      String    @db.VarChar(64)
+  scope       String    @db.VarChar(32)
+  ownerId     String    @db.VarChar(64)
+  type        String    @db.VarChar(32)
+  goalId      String?   @db.VarChar(64)
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, month, date])
+  @@index([workspaceId, cat])
+}
+
+model Goal {
+  id          String    @id @default(cuid())
+  workspaceId String
+  kind        String    @db.VarChar(32)
+  name        String    @db.VarChar(160)
+  target      Int
+  initial     Int       @default(0)
+  deadline    String    @default("") @db.VarChar(32)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+model Wallet {
+  id          String    @id @default(cuid())
+  workspaceId String
+  name        String    @db.VarChar(160)
+  kind        String    @db.VarChar(64)
+  balance     Int       @default(0)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
