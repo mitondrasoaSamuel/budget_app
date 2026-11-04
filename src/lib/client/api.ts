@@ -1,5 +1,19 @@
 import type { WorkspaceSnapshot } from "@/lib/workspace";
 
+const REQUEST_TIMEOUT_MS = 20_000;
+const TIMEOUT_MESSAGE = "Le serveur ne répond pas. Vérifiez votre connexion puis réessayez.";
+
+function fetch(input: string, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  return globalThis
+    .fetch(input, { ...init, signal: controller.signal })
+    .catch((e: unknown) => {
+      throw new Error(e instanceof DOMException && e.name === "AbortError" ? TIMEOUT_MESSAGE : "Connexion au serveur impossible.");
+    })
+    .finally(() => clearTimeout(timer));
+}
+
 async function parse<T>(resPromise: Promise<Response>): Promise<T> {
   const res = await resPromise;
   const data = await res.json().catch(() => ({}));
