@@ -15,7 +15,9 @@ const NAV = [
   { id: "budget", label: "Budget", icon: "budget", href: "/app/budget" },
   { id: "depenses", label: "Dépenses", icon: "receipt", href: "/app/depenses" },
   { id: "objectifs", label: "Objectifs", icon: "target", href: "/app/objectifs" },
+  { id: "portefeuilles", label: "Portefeuilles", icon: "wallet", href: "/app/portefeuilles" },
   { id: "analyses", label: "Analyses", icon: "chart", href: "/app/analyses" },
+  { id: "apprendre", label: "Apprendre", icon: "book", href: "/app/apprendre" },
   { id: "parametres", label: "Paramètres", icon: "settings", href: "/app/parametres" },
 ] as const;
 
@@ -70,7 +72,7 @@ export function AppShell({ children, view }: { children: ReactNode; view: string
     router.push(href);
   };
 
-  const moreActive = view === "analyses" || view === "parametres";
+  const moreActive = view === "analyses" || view === "apprendre" || view === "parametres";
 
   return (
     <div className={`app${mobileNav ? " nav-open" : ""}`}>

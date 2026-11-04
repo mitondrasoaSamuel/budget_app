@@ -35,12 +35,16 @@ export const api = {
       })
     ),
   patchBudget: (body: Record<string, unknown>) =>
-    parse<{ workspace: WorkspaceSnapshot }>(
+    parse<{ workspace: WorkspaceSnapshot; nextMonth?: string | null }>(
       fetch("/api/budget", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       })
+    ),
+  deleteBudget: (month: string) =>
+    parse<{ workspace: WorkspaceSnapshot }>(
+      fetch(`/api/budget?month=${encodeURIComponent(month)}`, { method: "DELETE" })
     ),
   createTransaction: (body: Record<string, unknown>) =>
     parse<{ workspace: WorkspaceSnapshot }>(
@@ -53,6 +57,26 @@ export const api = {
   deleteTransaction: (id: string) =>
     parse<{ workspace: WorkspaceSnapshot }>(
       fetch(`/api/transactions?id=${encodeURIComponent(id)}`, { method: "DELETE" })
+    ),
+  createGoal: (body: Record<string, unknown>) =>
+    parse<{ workspace: WorkspaceSnapshot }>(
+      fetch("/api/goals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+    ),
+  patchGoal: (body: Record<string, unknown>) =>
+    parse<{ workspace: WorkspaceSnapshot }>(
+      fetch("/api/goals", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+    ),
+  deleteGoal: (id: string) =>
+    parse<{ workspace: WorkspaceSnapshot }>(
+      fetch(`/api/goals?id=${encodeURIComponent(id)}`, { method: "DELETE" })
     ),
   changePassword: (current: string, next: string) =>
     parse<{ ok: boolean }>(

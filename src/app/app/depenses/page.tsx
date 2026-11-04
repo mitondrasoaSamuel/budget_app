@@ -26,6 +26,7 @@ export default function DepensesPage() {
   const cats = getCats(workspace);
   const activeCat = formCat || cats[0]?.id || "";
   const b = workspace.budgets[month];
+  const budgetReady = !!b?.started && !b?.closed;
   const envs = ((b?.envelopes || []) as { id: string; cat: string; name: string }[]).filter((e) => e.cat === activeCat);
   const totals = monthTotals(workspace, month);
   const pageSize = workspace.settings.pageSize || 10;
@@ -44,6 +45,13 @@ export default function DepensesPage() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!budgetReady) {
+      return notify(
+        b?.closed
+          ? "Ce mois est clôturé."
+          : "Commencez d’abord le budget du mois (page Budget).",
+      );
+    }
     if (!(amount > 0)) return notify("Montant invalide");
     const chosen = envId || envs[0]?.id;
     if (!chosen) return notify("Aucune enveloppe dans cette catégorie");
@@ -84,12 +92,27 @@ export default function DepensesPage() {
             {totals.txCount} opérations en {monthLabel(month)} : {money(totals.spent)} de dépenses.
           </p>
         </div>
-        <Button variant="primary" onClick={() => setOpen((v) => !v)}>
+        <Button
+          variant="primary"
+          disabled={!budgetReady}
+          onClick={() => setOpen((v) => !v)}
+        >
           {open ? "Fermer" : "Nouvelle opération"}
         </Button>
       </div>
 
-      {open && (
+      {!budgetReady && (
+        <p className="budget-phase is-draft" role="status">
+          <strong>{b?.closed ? "Mois clôturé" : "Budget non démarré"}</strong>
+          <span>
+            {b?.closed
+              ? "Impossible d’ajouter une opération."
+              : "Allez dans Budget, finalisez la prévision, puis cliquez sur Commencer."}
+          </span>
+        </p>
+      )}
+
+      {open && budgetReady && (
         <section className="block panel">
           <form onSubmit={submit}>
             <MoneyInput label="Montant" value={amount} onChange={setAmount} />

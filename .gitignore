@@ -19,6 +19,10 @@
 
 # production
 /build
+/deploy-dist/
+/ariary-deploy/
+/ariary-deploy.tar.gz
+/ariary-deploy.zip
 
 # misc
 .DS_Store

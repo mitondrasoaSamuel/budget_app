@@ -36,12 +36,42 @@ export type Branding = {
   theme: "auto" | "light" | "dark";
 };
 
+export type CloseDecisionStored = {
+  envId: string;
+  envName: string;
+  cat: string;
+  amount: number;
+  action: "carry" | "wallet" | "drop";
+  walletId: string | null;
+};
+
+/** Transfert entre enveloppes (stocké dans settings.aids, pas de migration). */
+export type EnvelopeAid = {
+  id: string;
+  month: string;
+  date: string;
+  fromEnvId: string;
+  toEnvId: string;
+  amount: number;
+  mode: "surplus" | "emergency";
+  linkedTxId: string;
+  desc: string;
+};
+
 export type AppSettings = {
   thresholds: [number, number, number];
   categories: Category[];
   defaultPct: Record<string, number>;
   methods: string[];
   pageSize: number;
+  /** Décisions de clôture par mois (stockées dans settings JSON, pas de migration). */
+  closeDecisionsByMonth?: Record<string, CloseDecisionStored[]>;
+  /** Mois cible → mois source des reports déjà appliqués. */
+  carriesApplied?: Record<string, string>;
+  /** Aides / transferts entre enveloppes. */
+  aids?: EnvelopeAid[];
+  /** Objectif → portefeuille dont le solde mesure la progression. */
+  goalWallets?: Record<string, string>;
 };
 
 export function defaultCategories(): Category[] {

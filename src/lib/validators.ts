@@ -15,6 +15,16 @@ export const registerSchema = z.object({
   mode: z.enum(["personal", "couple", "enterprise"]),
 });
 
+export const aidTransferSchema = z.object({
+  fromEnvId: z.string().min(1).max(64),
+  amount: z.number().int().positive(),
+  mode: z.enum(["surplus", "emergency"]),
+});
+
+export const budgetMonthQuerySchema = z.object({
+  month: z.string().regex(/^\d{4}-\d{2}$/),
+});
+
 export const transactionSchema = z.object({
   month: z.string().regex(/^\d{4}-\d{2}$/),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -28,6 +38,8 @@ export const transactionSchema = z.object({
   ownerId: z.string().min(1).max(64),
   type: z.enum(["expense", "transfer"]),
   goalId: z.string().max(64).nullable().optional(),
+  /** Transferts depuis d’autres enveloppes pour couvrir un dépassement. */
+  aids: z.array(aidTransferSchema).optional(),
 });
 
 export const workspacePatchSchema = z.object({
@@ -55,14 +67,43 @@ export const workspacePatchSchema = z.object({
   displayName: z.string().trim().min(1).max(120).optional(),
 });
 
+export const closeDecisionSchema = z.object({
+  envId: z.string().min(1).max(64),
+  envName: z.string().min(1).max(160),
+  cat: z.string().min(1).max(64),
+  amount: z.number().int().min(0),
+  action: z.enum(["carry", "wallet", "drop"]),
+  walletId: z.string().max(64).nullable(),
+});
+
 export const budgetPatchSchema = z.object({
   month: z.string().regex(/^\d{4}-\d{2}$/),
   incomes: z.array(z.any()).optional(),
   pct: z.record(z.string(), z.number()).optional(),
   envelopes: z.array(z.any()).optional(),
+  /** true = démarrer le budget (passe de prévision à actif). */
+  started: z.boolean().optional(),
+  /** true = clôturer le mois (champ DB déjà présent). */
+  closed: z.boolean().optional(),
+  closeDecisions: z.array(closeDecisionSchema).optional(),
+  prepareNext: z.boolean().optional(),
+  createdFrom: z.string().max(32).optional(),
 });
 
 export const passwordSchema = z.object({
   current: z.string().min(1),
   next: z.string().min(4).max(128),
+});
+
+export const goalSchema = z.object({
+  kind: z.enum(["saving", "project", "invest"]).default("saving"),
+  name: z.string().trim().min(1).max(160),
+  target: z.number().int().min(0).max(1_000_000_000),
+  initial: z.number().int().min(0).max(1_000_000_000).default(0),
+  deadline: z.string().max(32).optional().default(""),
+  walletId: z.string().max(64).nullable().optional(),
+});
+
+export const goalPatchSchema = goalSchema.partial().extend({
+  id: z.string().min(1).max(64),
 });

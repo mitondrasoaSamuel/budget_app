@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { workspacePatchSchema } from "@/lib/validators";
+import type { AppSettings } from "@/lib/defaults";
 import { loadWorkspaceSnapshot } from "@/lib/workspace";
 import { jsonError } from "@/lib/utils";
 import { publishWorkspace } from "@/lib/events";
@@ -41,6 +42,23 @@ export async function PATCH(req: NextRequest) {
         }
       }
 
+      let settingsPayload: Prisma.InputJsonValue | undefined;
+      if (body.settings) {
+        const current = await tx.workspace.findUnique({
+          where: { id: session.workspaceId },
+          select: { settings: true },
+        });
+        const prev = (current?.settings || {}) as AppSettings;
+        // Conserver les clés métier hors formulaire settings UI
+        settingsPayload = {
+          ...body.settings,
+          closeDecisionsByMonth: prev.closeDecisionsByMonth,
+          carriesApplied: prev.carriesApplied,
+          aids: prev.aids,
+          goalWallets: prev.goalWallets,
+        } as unknown as Prisma.InputJsonValue;
+      }
+
       await tx.workspace.update({
         where: { id: session.workspaceId },
         data: {
@@ -48,9 +66,7 @@ export async function PATCH(req: NextRequest) {
           ...(body.branding
             ? { branding: body.branding as unknown as Prisma.InputJsonValue }
             : {}),
-          ...(body.settings
-            ? { settings: body.settings as unknown as Prisma.InputJsonValue }
-            : {}),
+          ...(settingsPayload ? { settings: settingsPayload } : {}),
         },
       });
     });

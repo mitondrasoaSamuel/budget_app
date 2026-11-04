@@ -3,15 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { catOf, getCats, monthTotals, envStats } from "@/lib/budgetMath";
-import { money } from "@/lib/utils";
+import { money, moisDe } from "@/lib/utils";
 import { useWorkspace } from "@/components/providers/WorkspaceProvider";
-import { ensureMonthBudget } from "@/lib/client/ensureBudget";
 import { Button } from "@/components/ui/Button";
 import { Money } from "@/components/ui/Money";
 import { DashboardSkeleton } from "@/components/ui/Skeleton";
 
 export default function DashboardPage() {
-  const { workspace, month, setWorkspace, setSaving, notify } = useWorkspace();
+  const { workspace, month } = useWorkspace();
   const router = useRouter();
   const [ready, setReady] = useState(false);
 
@@ -19,29 +18,42 @@ export default function DashboardPage() {
     let alive = true;
     (async () => {
       if (!workspace) return;
-      if (!workspace.budgets[month]) {
-        setSaving(true);
-        try {
-          const next = await ensureMonthBudget(workspace, month);
-          if (alive) setWorkspace(next);
-        } catch (e) {
-          if (alive) notify(e instanceof Error ? e.message : "Budget non créé");
-        } finally {
-          if (alive) setSaving(false);
-        }
-      }
       await new Promise((r) => setTimeout(r, 180));
       if (alive) setReady(true);
     })();
     return () => {
       alive = false;
     };
-  }, [workspace, month, setWorkspace, setSaving, notify]);
+  }, [workspace, month]);
 
-  const totals = useMemo(() => (workspace ? monthTotals(workspace, month) : null), [workspace, month]);
+  const hasBudget = !!workspace?.budgets[month];
+  const totals = useMemo(
+    () => (workspace && hasBudget ? monthTotals(workspace, month) : null),
+    [workspace, month, hasBudget],
+  );
   const cats = workspace ? getCats(workspace) : [];
 
-  if (!workspace || !ready || !totals) return <DashboardSkeleton />;
+  if (!workspace || !ready) return <DashboardSkeleton />;
+
+  if (!hasBudget || !totals) {
+    return (
+      <div className="page">
+        <div className="page-head">
+          <h2>Bonjour {workspace.displayName}</h2>
+          <p>Aucun budget pour {moisDe(month)} pour l’instant.</p>
+        </div>
+        <div className="empty">
+          <strong>Préparez d’abord le budget du mois</strong>
+          <p>Choisissez de reprendre le mois précédent ou de créer un nouveau budget.</p>
+          <div>
+            <Button variant="primary" onClick={() => router.push("/app/budget")}>
+              Aller au budget
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const watch =
     totals.b?.envelopes
@@ -117,24 +129,33 @@ export default function DashboardPage() {
         </div>
         <div className="env-list">
           {watch.map(({ e, st }) => (
-            <div className="env-row static" key={e.id}>
+            <button
+              type="button"
+              className="env-row"
+              key={e.id}
+              onClick={() => router.push("/app/budget")}
+            >
               <div className="top">
                 <span className="name">{e.name}</span>
-                <span className={`status ${st.status}`}>{Math.round(st.pct)} %</span>
               </div>
               <div className="right">
-                <Money v={st.rest} />
+                <Money v={st.rest} /> <span className="faint">restant</span>
               </div>
               <div className="meta">
                 {money(st.spent)} sur {money(st.planned)}
               </div>
               <div />
               <div className="bar">
-                <span style={{ width: `${Math.min(100, st.pct)}%`, background: "var(--accent)" }} />
+                <span
+                  style={{
+                    width: `${Math.min(100, st.pct)}%`,
+                    background: st.status === "over" ? "var(--over)" : "var(--accent)",
+                  }}
+                />
               </div>
-            </div>
+            </button>
           ))}
-          {!watch.length && <p className="muted">Aucune enveloppe active.</p>}
+          {!watch.length && <p className="muted">Aucune enveloppe à surveiller pour l’instant.</p>}
         </div>
       </section>
     </div>

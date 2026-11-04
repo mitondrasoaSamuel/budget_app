@@ -4,19 +4,25 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "db:up": "docker compose up -d"
+    "db:up": "docker compose up -d",
+    "pack:deploy": "node scripts/pack-deploy.mjs"
   },
   "dependencies": {
+    "@next/swc-wasm-nodejs": "^16.3.8",
+    "@prisma/adapter-mariadb": "6.19.0",
     "@prisma/client": "6.19.0",
     "bcryptjs": "^3.0.3",
+    "html2pdf.js": "^0.14.0",
     "jose": "^6.2.12",
+    "mariadb": "^3.5.4",
     "next": "16.3.8",
+    "prisma": "6.19.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-icons": "^5.7.0",
@@ -28,7 +34,6 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
-    "prisma": "6.19.0",
     "typescript": "^5"
   }
 }

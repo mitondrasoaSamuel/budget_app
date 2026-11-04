@@ -20,6 +20,7 @@ export type WorkspaceSnapshot = {
       incomes: unknown[];
       pct: Record<string, number>;
       envelopes: unknown[];
+      started: boolean;
       closed: boolean;
       createdFrom: string;
     }
@@ -96,6 +97,7 @@ export async function createWorkspaceForUser(input: {
           incomes: incomes as unknown as Prisma.InputJsonValue,
           pct: pct as unknown as Prisma.InputJsonValue,
           envelopes: defaultEnvelopes(input.income, pct) as unknown as Prisma.InputJsonValue,
+          started: false,
           createdFrom: "new",
         },
       },
@@ -143,6 +145,7 @@ export async function loadWorkspaceSnapshot(workspaceId: string, userId: string)
       incomes: b.incomes as unknown[],
       pct: b.pct as Record<string, number>,
       envelopes: b.envelopes as unknown[],
+      started: b.started,
       closed: b.closed,
       createdFrom: b.createdFrom,
     };

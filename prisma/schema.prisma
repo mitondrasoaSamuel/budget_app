@@ -1,5 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // CloudLinux DirectAdmin = OpenSSL 1.0.x ; 3.0.x pour machines plus récentes
+  binaryTargets = ["native", "debian-openssl-1.0.x", "debian-openssl-3.0.x", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -65,6 +67,8 @@ model BudgetMonth {
   incomes     Json
   pct         Json
   envelopes   Json
+  /** false = prévision (brouillon) ; true = budget démarré (suivi des dépenses). */
+  started     Boolean   @default(false)
   closed      Boolean   @default(false)
   createdFrom String    @default("new") @db.VarChar(32)
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

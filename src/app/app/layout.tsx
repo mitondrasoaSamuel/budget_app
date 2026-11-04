@@ -10,7 +10,9 @@ function viewFromPath(pathname: string) {
   if (pathname.includes("/budget")) return "budget";
   if (pathname.includes("/depenses")) return "depenses";
   if (pathname.includes("/objectifs")) return "objectifs";
+  if (pathname.includes("/portefeuilles")) return "portefeuilles";
   if (pathname.includes("/analyses")) return "analyses";
+  if (pathname.includes("/apprendre")) return "apprendre";
   if (pathname.includes("/parametres")) return "parametres";
   return "dashboard";
 }

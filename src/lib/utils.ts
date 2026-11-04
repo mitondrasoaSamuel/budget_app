@@ -11,6 +11,18 @@ export function monthLabel(key: string) {
   return new Date(y, m - 1, 1).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 }
 
+/** Nom du mois seul (ex. « novembre »). */
+export function monthNameOnly(key: string) {
+  const [y, m] = key.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString("fr-FR", { month: "long" });
+}
+
+/** « de novembre » / « d’octobre » pour les titres. */
+export function moisDe(key: string) {
+  const n = monthNameOnly(key);
+  return /^[aeiouyhàâäéèêëïîôùûü]/i.test(n) ? `d’${n}` : `de ${n}`;
+}
+
 export function shiftMonth(key: string, delta: number) {
   const [y, m] = key.split("-").map(Number);
   return monthKey(new Date(y, m - 1 + delta, 1));
@@ -30,6 +42,16 @@ export function fmtPct(n: number, dig = 0) {
 
 export function isoLocal(d = new Date()) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+export function dateLabel(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return new Date(y, m - 1, d).toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
 }
 
 export function paginate<T>(items: T[], page: number, pageSize: number) {
