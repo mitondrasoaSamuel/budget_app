@@ -29,6 +29,12 @@ type Ctx = {
 
 const WorkspaceContext = createContext<Ctx | null>(null);
 
+/** Un instantané du flux temps réel peut arriver après la réponse d’un enregistrement plus récent. */
+function isStale(incoming: WorkspaceSnapshot, current: WorkspaceSnapshot | null) {
+  if (!current || incoming.id !== current.id) return false;
+  return Date.parse(incoming.updatedAt) < Date.parse(current.updatedAt);
+}
+
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<"boot" | "ready" | "saving">("boot");
   const [workspace, setWorkspace] = useState<WorkspaceSnapshot | null>(null);
@@ -58,7 +64,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     es.onmessage = (ev) => {
       try {
         const data = JSON.parse(ev.data) as { workspace?: WorkspaceSnapshot };
-        if (data.workspace) setWorkspace(data.workspace);
+        const incoming = data.workspace;
+        if (incoming) setWorkspace((prev) => (isStale(incoming, prev) ? prev : incoming));
       } catch {
         /* ignore */
       }
