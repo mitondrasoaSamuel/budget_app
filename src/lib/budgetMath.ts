@@ -153,6 +153,16 @@ export function envStats(
   };
 }
 
+/** Plus gros reste en haut ; enveloppes épuisées par des retraits tout en bas. */
+export function sortEnvsByRest<T extends Envelope>(ws: WorkspaceSnapshot, month: string, envs: T[]) {
+  const keyed = envs.map((env) => {
+    const st = envStats(ws, month, env);
+    return { env, rest: st.rest, exhausted: st.spent > 0 && st.rest <= 0 };
+  });
+  keyed.sort((a, b) => Number(a.exhausted) - Number(b.exhausted) || b.rest - a.rest);
+  return keyed.map((k) => k.env);
+}
+
 /** Historique des retraits + transferts d’une enveloppe. */
 export function envTxHistory(ws: WorkspaceSnapshot, month: string, env: Envelope) {
   const base = Number(env.planned) || 0;

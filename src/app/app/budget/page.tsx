@@ -11,6 +11,7 @@ import {
   pctTotal,
   envStats,
   ENV_STATUS,
+  sortEnvsByRest,
 } from "@/lib/budgetMath";
 import { api } from "@/lib/client/api";
 import {
@@ -126,6 +127,7 @@ function EnvelopeCategoryBlock({
   onNotify,
   readOnly,
   canWithdraw,
+  sortByRest,
 }: {
   category: Category;
   budget: BudgetMonth;
@@ -142,11 +144,13 @@ function EnvelopeCategoryBlock({
   onNotify: (msg: string) => void;
   readOnly?: boolean;
   canWithdraw?: boolean;
+  /** Trie par reste (budget démarré) ; en prévision l’ordre de saisie est conservé. */
+  sortByRest?: boolean;
 }) {
-  const envs = useMemo(
-    () => envelopes.filter((e) => e.cat === category.id),
-    [envelopes, category.id],
-  );
+  const envs = useMemo(() => {
+    const inCat = envelopes.filter((e) => e.cat === category.id);
+    return sortByRest ? sortEnvsByRest(workspace, month, inCat) : inCat;
+  }, [envelopes, category.id, sortByRest, workspace, month]);
   const [page, setPage] = useState(1);
   const [showAll, setShowAll] = useState(false);
 
@@ -990,6 +994,7 @@ export default function BudgetPage() {
             onNotify={notify}
             readOnly={isClosed}
             canWithdraw={!isDraft && !isClosed}
+            sortByRest={!isDraft}
           />
         ))}
       </section>
