@@ -1494,6 +1494,28 @@ button.env-name.linkish:hover {
   max-height: min(92vh, 860px);
 }
 
+.sheet-root.is-center {
+  align-items: center;
+  padding: 16px;
+}
+
+.sheet-panel.sheet-sm {
+  width: min(460px, 100%);
+  border-radius: 16px;
+}
+
+.confirm-lines {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+}
+
+.confirm-lines > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 /* Modal Terminer le mois ≈ 92 % de l’écran */
 .sheet-panel.sheet-lg {
   width: min(92vw, 1280px);

@@ -36,6 +36,7 @@ import type { Category } from "@/lib/defaults";
 import { fmtPct, moisDe, money, monthLabel } from "@/lib/utils";
 import type { WorkspaceSnapshot } from "@/lib/workspace";
 import { CloseMonthSheet } from "@/components/budget/CloseMonthSheet";
+import { ConfirmDialog } from "@/components/budget/ConfirmDialog";
 import { EnvDetailSheet, RetraitSheet } from "@/components/budget/EnvelopeSheets";
 import { MonthWithdrawals } from "@/components/budget/MonthWithdrawals";
 import { ResetBudgetChoice } from "@/components/budget/ResetBudgetChoice";
@@ -58,6 +59,14 @@ type Envelope = {
 };
 
 type IncomeRow = { id: string; source: string; amount: number; memberId?: string };
+
+/** `nextAmount: null` = suppression du revenu. */
+type IncomeChange = { income: IncomeRow; nextAmount: number | null };
+
+function applyIncomeChange(incomes: IncomeRow[], { income, nextAmount }: IncomeChange) {
+  if (nextAmount === null) return incomes.filter((x) => x.id !== income.id);
+  return incomes.map((x) => (x.id === income.id ? { ...x, amount: nextAmount } : x));
+}
 
 type EnvSheetState =
   | { mode: "create"; cat: string; maxPlanned: number }
@@ -466,6 +475,8 @@ export default function BudgetPage() {
   const [openCats, setOpenCats] = useState<Record<string, boolean> | null>(null);
   const [creating, setCreating] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [incomeChange, setIncomeChange] = useState<IncomeChange | null>(null);
+  const [incomeInputsKey, setIncomeInputsKey] = useState(0);
 
   useEffect(() => {
     if (!workspace) return;
@@ -566,6 +577,22 @@ export default function BudgetPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const requestIncomeChange = (change: IncomeChange) => {
+    if (isDraft) void save({ incomes: applyIncomeChange(incomes, change) });
+    else setIncomeChange(change);
+  };
+
+  const confirmIncomeChange = async () => {
+    if (!incomeChange) return;
+    await save({ incomes: applyIncomeChange(incomes, incomeChange) });
+    setIncomeChange(null);
+  };
+
+  const cancelIncomeChange = () => {
+    setIncomeChange(null);
+    setIncomeInputsKey((k) => k + 1);
   };
 
   const startBudget = async () => {
@@ -880,13 +907,11 @@ export default function BudgetPage() {
               ))}
             </select>
             <MoneyInput
+              key={`${i.id}-${incomeInputsKey}`}
               value={i.amount}
               commitOnBlur
               onChange={(v) => {
-                if (isClosed) return;
-                const next = [...incomes];
-                next[idx] = { ...i, amount: v };
-                void save({ incomes: next });
+                if (!isClosed) requestIncomeChange({ income: i, nextAmount: v });
               }}
             />
             {!isClosed && (
@@ -894,7 +919,7 @@ export default function BudgetPage() {
                 type="button"
                 className="icon-btn"
                 aria-label="Supprimer"
-                onClick={() => void save({ incomes: incomes.filter((x) => x.id !== i.id) })}
+                onClick={() => requestIncomeChange({ income: i, nextAmount: null })}
               >
                 ×
               </button>
@@ -1097,6 +1122,42 @@ export default function BudgetPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {incomeChange && (
+        <ConfirmDialog
+          title={incomeChange.nextAmount === null ? "Supprimer ce revenu ?" : "Modifier ce revenu ?"}
+          confirmLabel={incomeChange.nextAmount === null ? "Oui, supprimer" : "Confirmer"}
+          onConfirm={confirmIncomeChange}
+          onCancel={cancelIncomeChange}
+        >
+          <p className="muted">
+            Le budget est en cours : le budget de chaque catégorie et les enveloppes en % seront
+            recalculés.
+          </p>
+          <div className="confirm-lines">
+            <div>
+              <span>{incomeChange.income.source}</span>
+              <span>
+                <Money v={incomeChange.income.amount} />
+                {incomeChange.nextAmount !== null && (
+                  <>
+                    {" → "}
+                    <Money v={incomeChange.nextAmount} />
+                  </>
+                )}
+              </span>
+            </div>
+            <div>
+              <span>Total des revenus</span>
+              <strong>
+                <Money v={inc} />
+                {" → "}
+                <Money v={incomeTotal({ incomes: applyIncomeChange(incomes, incomeChange) })} />
+              </strong>
+            </div>
+          </div>
+        </ConfirmDialog>
       )}
 
       {closeOpen && (
