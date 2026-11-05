@@ -4,7 +4,15 @@ import { useState } from "react";
 import { AppIcon } from "@/components/ui/AppIcon";
 import { Button } from "@/components/ui/Button";
 
-export function ResetBudgetChoice({ onConfirm }: { onConfirm: () => Promise<void> }) {
+export function ResetBudgetChoice({
+  onConfirm,
+  label = "Changer de choix",
+  question = "Revenir aux choix ? Les saisies de ce mois seront perdues.",
+}: {
+  onConfirm: () => Promise<void>;
+  label?: string;
+  question?: string;
+}) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -25,14 +33,14 @@ export function ResetBudgetChoice({ onConfirm }: { onConfirm: () => Promise<void
         icon={<AppIcon name="undo" size={17} />}
         onClick={() => setConfirming(true)}
       >
-        Changer de choix
+        {label}
       </Button>
     );
   }
 
   return (
     <div className="reset-choice" role="alert">
-      <span className="muted">Revenir aux choix ? Les saisies de ce mois seront perdues.</span>
+      <span className="muted">{question}</span>
       <Button size="sm" variant="primary" disabled={busy} onClick={() => void confirm()}>
         Oui, revenir
       </Button>

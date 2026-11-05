@@ -585,6 +585,19 @@ export default function BudgetPage() {
     }
   };
 
+  const backToDraft = async () => {
+    setSaving(true);
+    try {
+      const { workspace: next } = await api.patchBudget({ month, started: false });
+      setWorkspace(next);
+      notify("Budget repassé en prévision : vous pouvez modifier la répartition.");
+    } catch (e) {
+      notify(e instanceof Error ? e.message : "Retour en prévision impossible");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const resetBudgetChoice = async () => {
     setSaving(true);
     try {
@@ -753,6 +766,7 @@ export default function BudgetPage() {
 
   const isDraft = !b.started;
   const isClosed = b.closed;
+  const pctLocked = isClosed || !isDraft;
 
   return (
     <div className="page">
@@ -770,6 +784,13 @@ export default function BudgetPage() {
         </div>
         <div className="page-head-actions">
           {isDraft && !isClosed && <ResetBudgetChoice onConfirm={resetBudgetChoice} />}
+          {!isDraft && !isClosed && (
+            <ResetBudgetChoice
+              label="Revenir en prévision"
+              question="Repasser en prévision ? Les dépenses déjà saisies sont conservées ; cliquez ensuite sur Commencer pour reprendre le suivi."
+              onConfirm={backToDraft}
+            />
+          )}
           <Button
             icon={<AppIcon name="download" size={17} />}
             disabled={exporting}
@@ -903,6 +924,9 @@ export default function BudgetPage() {
       <section className="block">
         <div className="block-head">
           <h3>Répartition</h3>
+          {pctLocked && !isClosed && (
+            <p>Verrouillée pendant le mois. Cliquez sur « Revenir en prévision » pour la modifier.</p>
+          )}
         </div>
         {cats.map((c) => (
           <div className="pct-row" key={c.id}>
@@ -916,7 +940,7 @@ export default function BudgetPage() {
                 min={0}
                 max={100}
                 value={b.pct[c.id] || 0}
-                disabled={isClosed}
+                disabled={pctLocked}
                 onChange={(e) => void save({ pct: { ...b.pct, [c.id]: Number(e.target.value) } })}
               />
             </div>
@@ -924,7 +948,7 @@ export default function BudgetPage() {
               className="pct-input"
               ariaLabel={`Part de ${c.name}`}
               value={Number(b.pct[c.id]) || 0}
-              disabled={isClosed}
+              disabled={pctLocked}
               onCommit={(v) => void save({ pct: { ...b.pct, [c.id]: v } })}
             />
             <div className="amount">

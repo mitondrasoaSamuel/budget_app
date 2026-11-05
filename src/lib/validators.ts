@@ -81,7 +81,7 @@ export const budgetPatchSchema = z.object({
   incomes: z.array(z.any()).optional(),
   pct: z.record(z.string(), z.number()).optional(),
   envelopes: z.array(z.any()).optional(),
-  /** true = démarrer le budget (passe de prévision à actif). */
+  /** true = démarrer le budget ; false = repasser en prévision (mois non clôturé). */
   started: z.boolean().optional(),
   /** true = clôturer le mois (champ DB déjà présent). */
   closed: z.boolean().optional(),

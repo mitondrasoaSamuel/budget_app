@@ -123,6 +123,14 @@ export async function PATCH(req: NextRequest) {
       return jsonError("Ce mois est clôturé : plus de modifications possibles.");
     }
 
+    if (body.started === false && (!existing || existing.closed)) {
+      return jsonError("Ce budget ne peut pas repasser en prévision.");
+    }
+
+    if (existing?.started && body.started !== false && body.pct !== undefined) {
+      return jsonError("Répartition verrouillée : repassez en prévision pour la modifier.");
+    }
+
     const touchesAmounts =
       body.incomes !== undefined || body.pct !== undefined || body.envelopes !== undefined;
     const updatedEnvelopes = touchesAmounts
@@ -155,8 +163,7 @@ export async function PATCH(req: NextRequest) {
         ...(updatedEnvelopes
           ? { envelopes: updatedEnvelopes as unknown as Prisma.InputJsonValue }
           : {}),
-        // On ne peut que démarrer (pas repasser en prévision via cet endpoint).
-        ...(body.started === true ? { started: true } : {}),
+        ...(body.started !== undefined ? { started: body.started } : {}),
         ...(body.createdFrom !== undefined ? { createdFrom: body.createdFrom } : {}),
       },
     });
