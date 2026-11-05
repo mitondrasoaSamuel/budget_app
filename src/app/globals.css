@@ -2380,8 +2380,11 @@ table.t .r {
   }
 
   .page-head-actions .btn {
-    flex: 1;
-    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .page-head-actions .reset-choice {
+    flex-basis: 100%;
   }
 
   .hero h2 {
@@ -2427,7 +2430,17 @@ table.t .r {
   }
 
   .inc-row.solo {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) 40px;
+    row-gap: 8px;
+  }
+
+  .inc-row.solo > select {
+    grid-column: 1 / -1;
+  }
+
+  .inc-row.solo + .inc-row.solo {
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
   }
 
   .pct-row {
