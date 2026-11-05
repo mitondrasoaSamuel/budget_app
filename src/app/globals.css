@@ -1747,6 +1747,21 @@ button.env-name.linkish:hover {
   margin-bottom: 18px;
 }
 
+.article-list {
+  margin: -6px 0 18px;
+  padding-left: 24px;
+  font-size: 16.5px;
+  line-height: 1.7;
+}
+
+.article-list li + li {
+  margin-top: 6px;
+}
+
+.article-list li::marker {
+  color: var(--accent);
+}
+
 .help-body h4 {
   font-size: 14.5px;
   margin: 16px 0 8px;

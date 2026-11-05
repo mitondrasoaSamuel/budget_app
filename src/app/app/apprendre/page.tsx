@@ -2,10 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { getCats, catOf } from "@/lib/budgetMath";
-import { ARTICLE_SECTIONS, ARTICLES, CAT_HELP } from "@/lib/learnContent";
+import { ARTICLE_SECTIONS, ARTICLES, CAT_HELP, type ArticleBlock } from "@/lib/learnContent";
 import { useWorkspace } from "@/components/providers/WorkspaceProvider";
 import { AppIcon } from "@/components/ui/AppIcon";
 import { Button } from "@/components/ui/Button";
+
+function ArticleBlockView({ block }: { block: ArticleBlock }) {
+  if (typeof block === "string") return <p>{block}</p>;
+  const List = block.ordered ? "ol" : "ul";
+  return (
+    <List className="article-list">
+      {block.items.map((item) => (
+        <li key={item}>{item}</li>
+      ))}
+    </List>
+  );
+}
 
 export default function ApprendrePage() {
   const { workspace } = useWorkspace();
@@ -48,8 +60,8 @@ export default function ApprendrePage() {
         </p>
         <h2>{a.title}</h2>
         <p className="lede">{a.lede}</p>
-        {a.body.map((p, i) => (
-          <p key={i}>{p}</p>
+        {a.body.map((block, i) => (
+          <ArticleBlockView key={i} block={block} />
         ))}
         {next && (
           <div style={{ marginTop: 36 }}>

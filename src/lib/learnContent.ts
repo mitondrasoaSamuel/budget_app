@@ -1,12 +1,15 @@
 export const ARTICLE_SECTIONS = ["Débuter", "Dépenses", "Épargne", "Investissement", "Couple"] as const;
 
+/** Un paragraphe, ou une liste (numérotée si `ordered`). */
+export type ArticleBlock = string | { items: string[]; ordered?: boolean };
+
 export type LearnArticle = {
   id: string;
   sec: (typeof ARTICLE_SECTIONS)[number];
   title: string;
   min: number;
   lede: string;
-  body: string[];
+  body: ArticleBlock[];
 };
 
 export const ARTICLES: LearnArticle[] = [
@@ -66,12 +69,12 @@ export const ARTICLES: LearnArticle[] = [
     sec: "Dépenses",
     title: "Besoins ou envies ?",
     min: 2,
-    lede: "La question à se poser avant chaque achat.",
+    lede: "Distinguer ce dont vous avez besoin de ce dont vous avez envie.",
     body: [
-      "Un besoin est une dépense sans laquelle votre vie quotidienne serait vraiment compromise : se loger, se nourrir, se déplacer pour travailler, scolariser les enfants.",
-      "Une envie rend la vie plus agréable, mais on peut s’en passer ou la reporter : un repas au restaurant, un nouveau téléphone alors que l’ancien fonctionne, un abonnement de plus.",
-      "La frontière dépend de votre situation. Internet est un besoin pour quelqu’un qui travaille en ligne, une envie pour quelqu’un qui l’utilise surtout pour se divertir. Il n’y a pas de mauvaise réponse, seulement une réponse honnête.",
-      "Distinguer les deux ne veut pas dire supprimer les envies. Cela veut dire les financer après avoir couvert l’essentiel.",
+      "Un besoin, c’est ce dont vous ne pouvez pas vous passer pour vivre et travailler : se loger, manger, se soigner, se déplacer pour aller travailler. Une envie, c’est ce qui fait plaisir mais dont vous pouvez vous passer : sorties, vêtements de marque, dernier téléphone.",
+      "Les envies ne sont pas un problème. Elles ont leur place dans la catégorie « Dépenses personnelles ». Le problème commence quand elles prennent la place des besoins.",
+      "Certaines dépenses sont entre les deux. Un forfait internet peut être un besoin si vous travaillez avec, mais le forfait le plus cher est une envie. Posez-vous la question : de quoi ai-je vraiment besoin, et qu’est-ce que j’ajoute en plus ?",
+      "Astuce : devant un achat non prévu, attendez 24 heures. Si l’envie est passée, vous avez économisé. Si elle reste, achetez-le l’esprit tranquille.",
     ],
   },
   {
@@ -79,23 +82,43 @@ export const ARTICLES: LearnArticle[] = [
     sec: "Dépenses",
     title: "Reconnaître une dépense essentielle",
     min: 2,
-    lede: "Récurrent ne veut pas dire essentiel.",
+    lede: "Un test simple pour savoir ce qui ne peut pas attendre.",
     body: [
-      "Posez-vous une question simple : si je ne payais pas cette dépense ce mois-ci, qu’est-ce qui se passerait ? Si la réponse est grave pour le foyer, elle est essentielle.",
-      "Attention au piège de la récurrence. Un abonnement revient tous les mois, mais cela ne le rend pas indispensable. À l’inverse, une réparation ponctuelle du toit peut être tout à fait essentielle.",
-      "Classer correctement vos dépenses vous donne une vision juste : vous savez combien coûte réellement le fonctionnement de base de votre foyer.",
+      "Demandez-vous : si je ne paie pas cette dépense, y a-t-il une conséquence grave sur mon logement, ma santé, ma sécurité ou mon travail ? Si oui, elle est essentielle.",
+      "Les dépenses essentielles sont en général :",
+      {
+        items: [
+          "le loyer, l’eau et l’électricité,",
+          "la nourriture de base,",
+          "les soins et médicaments,",
+          "le transport vers le travail ou l’école,",
+          "la scolarité des enfants,",
+          "le remboursement minimum d’une dette.",
+        ],
+      },
+      "Attention au niveau. Manger est essentiel, mais manger au restaurant tous les jours ne l’est pas. Dans chaque dépense essentielle, il y a une version minimum (le nécessaire) et des options en plus (le confort). Budgétisez d’abord le minimum.",
     ],
   },
   {
     id: "imprevus",
     sec: "Dépenses",
     title: "Gérer les dépenses imprévues",
-    min: 2,
-    lede: "Elles arrivent toujours. Autant s’y préparer.",
+    min: 3,
+    lede: "Un imprévu est normal, pas exceptionnel.",
     body: [
-      "Une panne, une réparation, un problème de santé dans la famille : les imprévus font partie de la vie. Ce qui est imprévisible, c’est le moment, pas le fait qu’ils arrivent.",
-      "Dans l’application, une dépense imprévue reste rangée dans son enveloppe habituelle, mais elle est marquée comme imprévue. En fin de mois, vous voyez combien les imprévus vous ont coûté.",
-      "Si ce montant revient chaque mois, c’est un signal : prévoyez une petite marge dans vos enveloppes ou renforcez votre fonds d’urgence.",
+      "Réparation, maladie, cérémonie familiale, panne de téléphone : chaque mois apporte quelque chose qu’on n’avait pas prévu. Le budget doit donc en tenir compte.",
+      "Avant : gardez une enveloppe « Imprévus », environ 5 % de vos revenus.",
+      "Quand ça arrive :",
+      {
+        ordered: true,
+        items: [
+          "Vérifiez si c’est urgent ou si cela peut attendre.",
+          "Payez d’abord avec l’enveloppe « Imprévus ».",
+          "Si elle ne suffit pas et que c’est une vraie urgence, utilisez le fonds d’urgence.",
+          "Sinon, déplacez de l’argent d’une enveloppe « envies » (loisirs, sorties), jamais des besoins essentiels.",
+        ],
+      },
+      "Après : notez la dépense comme « imprévue », puis reconstituez l’enveloppe le mois suivant. Évitez de vous endetter pour un imprévu : c’est exactement le rôle de l’épargne.",
     ],
   },
   {
@@ -115,11 +138,12 @@ export const ARTICLES: LearnArticle[] = [
     sec: "Épargne",
     title: "Le fonds d’urgence",
     min: 2,
-    lede: "Votre filet de sécurité.",
+    lede: "Votre protection contre les mauvaises surprises.",
     body: [
-      "Le fonds d’urgence est une réserve destinée uniquement aux vrais imprévus : perte de revenus, réparation importante, urgence familiale.",
-      "Une référence courante est de viser l’équivalent de trois mois de dépenses essentielles. Si vos besoins représentent 1 500 000 Ar par mois, l’objectif serait de 4 500 000 Ar. C’est une indication, pas une obligation : commencez par un premier palier atteignable.",
-      "Gardez ce fonds séparé de l’argent du quotidien, pour ne pas y puiser par habitude. Et si vous l’utilisez, reconstituez-le en priorité les mois suivants.",
+      "C’est une réserve d’argent réservée aux vrais coups durs : perte de revenu, maladie, réparation indispensable. Ce n’est ni pour les fêtes, ni pour une promotion.",
+      "Quel montant ? Visez 3 mois de dépenses essentielles. Si vos besoins coûtent 600 000 Ar par mois, l’objectif est de 1 800 000 Ar. Si c’est trop haut au début, commencez par 1 mois, puis augmentez.",
+      "Où le garder ? Dans un endroit accessible rapidement, mais séparé de votre argent du quotidien, pour ne pas être tenté de le dépenser. Il ne doit pas être bloqué dans un placement risqué.",
+      "Règle d’or : si vous l’utilisez, reconstituez-le dès que possible. Il passe avant tout investissement.",
     ],
   },
   {
@@ -127,11 +151,12 @@ export const ARTICLES: LearnArticle[] = [
     sec: "Épargne",
     title: "Définir un objectif d’épargne",
     min: 2,
-    lede: "Un montant, une date, un versement mensuel.",
+    lede: "Un objectif clair se réalise plus facilement qu’une vague intention.",
     body: [
-      "Un bon objectif a un nom, un montant et une échéance. « Voyage à Nosy Be, 1 800 000 Ar, dans huit mois » est plus motivant que « mettre de l’argent de côté ».",
-      "Divisez le montant restant par le nombre de mois : vous obtenez le versement mensuel à prévoir dans votre budget. Si ce montant est trop élevé, repoussez la date plutôt que d’abandonner.",
-      "Suivre la progression, même lente, entretient la motivation. Chaque versement vous rapproche du but.",
+      "« Je veux économiser » est difficile à tenir. Un bon objectif répond à trois questions : combien, pour quoi, pour quand ?",
+      "Exemple : 1 200 000 Ar pour du matériel de travail dans 12 mois. Calcul : 1 200 000 ÷ 12 = 100 000 Ar à mettre de côté chaque mois.",
+      "Si ce montant est trop élevé, deux options : allonger le délai, ou réduire l’objectif. Mieux vaut un plan réaliste tenu que parfait et abandonné.",
+      "Donnez un nom à chaque objectif dans une enveloppe séparée. Voir l’argent avancer motive. Si vous en avez plusieurs, commencez par le fonds d’urgence.",
     ],
   },
   {
@@ -150,49 +175,78 @@ export const ARTICLES: LearnArticle[] = [
     id: "formation",
     sec: "Investissement",
     title: "Investir dans une formation",
-    min: 2,
-    lede: "Souvent l’investissement le plus rentable.",
+    min: 3,
+    lede: "Une formation est un investissement quand elle augmente vos revenus.",
     body: [
-      "Apprendre une compétence utile peut augmenter durablement vos revenus : obtenir un meilleur poste, proposer un nouveau service, lancer une activité.",
-      "Avant de payer une formation, demandez-vous ce qu’elle vous permettra de faire concrètement, et en combien de temps elle peut se rembourser.",
-      "Classez ces dépenses dans Investissement et projets : cela vous aide à voir la part de votre revenu que vous consacrez à votre avenir.",
+      "Se former peut être l’un des meilleurs investissements, car ce que vous apprenez reste avec vous. Mais toutes les formations ne se valent pas. Avant de payer, posez-vous trois questions :",
+      {
+        ordered: true,
+        items: [
+          "Va-t-elle m’aider à gagner plus ou à trouver un meilleur emploi ? Soyez précis.",
+          "Combien de temps pour récupérer le coût ? Une formation à 300 000 Ar qui vous rapporte 50 000 Ar de plus par mois est rentabilisée en 6 mois.",
+          "Puis-je me le permettre sans toucher à mon fonds d’urgence ?",
+        ],
+      },
+      "Méfiez-vous des promesses de gains rapides et garantis. Renseignez-vous auprès de personnes qui ont suivi la formation. Si le coût est élevé, vous pouvez la financer progressivement par une épargne dédiée.",
     ],
   },
   {
     id: "couple",
     sec: "Couple",
     title: "Gérer l’argent en couple",
-    min: 3,
-    lede: "Un budget commun, des dépenses personnelles, et des règles claires.",
+    min: 2,
+    lede: "Parler d’argent ensemble évite bien des disputes.",
     body: [
-      "Il n’existe pas une seule bonne façon de gérer l’argent à deux. Certains couples mettent tout en commun, d’autres gardent tout séparé. La formule la plus fréquente combine les deux.",
-      "Les dépenses du foyer (loyer, alimentation, école, énergie) forment le budget commun. Chacun y contribue selon une règle convenue ensemble. Le reste de l’argent permet à chacun de garder une part d’autonomie.",
-      "Dans l’application, une dépense personnelle n’est visible que par la personne qui l’a enregistrée. Seul son montant est pris en compte dans les totaux. Chacun garde sa vie privée, le couple garde une vision commune.",
-      "Prenez un moment chaque mois pour regarder l’analyse ensemble. Parler des chiffres, c’est éviter de se disputer sur des impressions.",
+      "L’argent est une cause fréquente de tensions dans les couples, souvent parce qu’on n’en parle pas assez. Voici une méthode simple :",
+      {
+        items: [
+          "Tout mettre sur la table : revenus, dépenses, dettes, objectifs de chacun.",
+          "Créer 3 espaces : une enveloppe commune (loyer, nourriture, enfants), et une enveloppe personnelle pour chacun, dont l’autre n’a pas à connaître l’usage.",
+          "Se retrouver chaque mois : 20 minutes pour regarder le budget ensemble, sans reproches, avec les chiffres.",
+        ],
+      },
+      "Les enveloppes personnelles sont importantes : elles donnent à chacun une liberté et évitent de se justifier pour chaque petite dépense.",
     ],
   },
   {
     id: "5050",
     sec: "Couple",
     title: "50/50 ou proportionnel aux revenus ?",
-    min: 2,
-    lede: "Deux façons justes de partager, selon les situations.",
+    min: 3,
+    lede: "Deux façons de partager les dépenses communes.",
     body: [
-      "Avec le 50/50, chacun paie la moitié des dépenses communes. C’est simple et adapté quand les deux revenus sont proches.",
-      "Avec le partage proportionnel, chacun contribue selon ce qu’il gagne. Si l’un gagne 2 500 000 Ar et l’autre 1 500 000 Ar, le premier paie 62,5 % et le second 37,5 %. Chacun garde ainsi un reste à vivre comparable.",
-      "Vous pouvez aussi choisir une répartition personnalisée, par exemple 60/40. L’essentiel est que la règle soit discutée, acceptée par les deux, et revue si la situation change.",
+      "Le 50/50 : chacun paie la même somme. C’est simple, mais cela pèse davantage sur celui qui gagne le moins.",
+      "Le proportionnel : chacun contribue selon ses revenus.",
+      "Exemple : dépenses communes de 1 000 000 Ar. Revenus : 1 200 000 Ar et 800 000 Ar, soit 60 % et 40 %.",
+      {
+        items: [
+          "En 50/50 : 500 000 Ar chacun. Il reste 700 000 Ar à l’un et 300 000 Ar à l’autre.",
+          "En proportionnel : 600 000 Ar et 400 000 Ar. Il reste 600 000 Ar et 400 000 Ar.",
+        ],
+      },
+      "Le proportionnel est souvent plus équitable quand les revenus sont très différents. Mais il n’y a pas de bonne réponse unique : le meilleur système est celui que les deux trouvent juste. Quel que soit le choix, vous pouvez le revoir si la situation change.",
     ],
   },
   {
     id: "projet-commun",
     sec: "Couple",
     title: "Préparer un projet commun",
-    min: 2,
-    lede: "Un objectif partagé avance plus vite.",
+    min: 3,
+    lede: "Mariage, maison, terrain, voyage : avancer dans la même direction.",
     body: [
-      "Voyage, mariage, terrain, maison : un projet commun se prépare comme un objectif d’épargne, avec un montant, une date et un versement mensuel.",
-      "Décidez ensemble de la contribution de chacun, avec la même règle que pour le budget commun ou une autre si vous préférez.",
-      "Suivez la progression ensemble dans l’onglet Objectifs. Voir le montant grandir mois après mois est une vraie source de motivation à deux.",
+      "Un projet commun réussit quand il est précis et partagé.",
+      {
+        ordered: true,
+        items: [
+          "Décrivez-le ensemble : quel est le projet ? Pourquoi est-il important pour chacun ?",
+          "Chiffrez-le : combien cela coûte-t-il ? Pour quelle date ?",
+          "Calculez l’effort mensuel : par exemple, 6 000 000 Ar en 24 mois = 250 000 Ar par mois.",
+          "Répartissez la contribution : à parts égales ou proportionnelles aux revenus.",
+          "Ouvrez une enveloppe dédiée, séparée du budget courant.",
+          "Faites le point chaque mois : on avance, on ajuste, on célèbre les étapes.",
+        ],
+      },
+      "Si l’un des deux ne peut pas contribuer un mois, parlez-en tôt plutôt que de laisser s’installer le non-dit.",
     ],
   },
 ];
