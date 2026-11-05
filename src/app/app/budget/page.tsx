@@ -38,12 +38,12 @@ import { CloseMonthSheet } from "@/components/budget/CloseMonthSheet";
 import { EnvDetailSheet, RetraitSheet } from "@/components/budget/EnvelopeSheets";
 import { MonthWithdrawals } from "@/components/budget/MonthWithdrawals";
 import { ResetBudgetChoice } from "@/components/budget/ResetBudgetChoice";
-import { PctInput, SplitModeToggle } from "@/components/budget/EnvelopeSplit";
+import { SplitModeToggle } from "@/components/budget/EnvelopeSplit";
 import { useWorkspace } from "@/components/providers/WorkspaceProvider";
 import { AppIcon } from "@/components/ui/AppIcon";
 import { Button } from "@/components/ui/Button";
 import { Money } from "@/components/ui/Money";
-import { Input, MoneyInput } from "@/components/ui/Input";
+import { Input, MoneyInput, PctInput } from "@/components/ui/Input";
 
 type Envelope = {
   id: string;
@@ -920,16 +920,13 @@ export default function BudgetPage() {
                 onChange={(e) => void save({ pct: { ...b.pct, [c.id]: Number(e.target.value) } })}
               />
             </div>
-            <div className="input-suffix">
-              <input
-                className="input pct-input"
-                type="number"
-                value={b.pct[c.id] || 0}
-                disabled={isClosed}
-                onChange={(e) => void save({ pct: { ...b.pct, [c.id]: Number(e.target.value) || 0 } })}
-              />
-              <span>%</span>
-            </div>
+            <PctInput
+              className="pct-input"
+              ariaLabel={`Part de ${c.name}`}
+              value={Number(b.pct[c.id]) || 0}
+              disabled={isClosed}
+              onCommit={(v) => void save({ pct: { ...b.pct, [c.id]: v } })}
+            />
             <div className="amount">
               <Money v={catAlloc(budgetForDisplay, c.id)} />
             </div>

@@ -1156,6 +1156,10 @@ button.env-row:hover .name {
   width: 100%;
 }
 
+.pct-row .field {
+  margin: 0;
+}
+
 input[type="range"] {
   width: 100%;
   accent-color: var(--accent);

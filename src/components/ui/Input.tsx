@@ -21,6 +21,70 @@ export function Input({ label, hint, suffix, id, className = "", ...rest }: Prop
   );
 }
 
+const PCT_PRECISION = 100;
+
+const pctText = (v: number) =>
+  String(Math.round((Number(v) || 0) * PCT_PRECISION) / PCT_PRECISION).replace(".", ",");
+
+const parsePct = (raw: string) =>
+  Math.round((Number(raw.replace(",", ".")) || 0) * PCT_PRECISION) / PCT_PRECISION;
+
+/** Saisie d’un % : vide autorisé pendant la frappe, 0 au blur ; onCommit seulement au blur / Entrée. */
+export function PctInput({
+  id,
+  label,
+  value,
+  max = 100,
+  disabled,
+  className,
+  ariaLabel,
+  onCommit,
+  onClamp,
+}: {
+  id?: string;
+  label?: string;
+  value: number;
+  max?: number;
+  disabled?: boolean;
+  className?: string;
+  ariaLabel?: string;
+  onCommit: (v: number) => void;
+  onClamp?: (raw: number, next: number) => void;
+}) {
+  const [draft, setDraft] = useState(pctText(value));
+  const [synced, setSynced] = useState(value);
+
+  if (synced !== value) {
+    setSynced(value);
+    setDraft(pctText(value));
+  }
+
+  const commit = () => {
+    const raw = parsePct(draft);
+    const next = Math.min(Math.max(0, raw), max);
+    if (next !== raw) onClamp?.(raw, next);
+    setDraft(pctText(next));
+    if (next !== value) onCommit(next);
+  };
+
+  return (
+    <Input
+      id={id}
+      label={label}
+      suffix="%"
+      className={className}
+      aria-label={ariaLabel}
+      disabled={disabled}
+      inputMode="decimal"
+      placeholder="0"
+      value={draft}
+      onChange={(e) => setDraft(e.target.value.replace(/[^\d.,]/g, ""))}
+      onBlur={commit}
+      onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+    />
+  );
+}
+
 function formatMoney(v: number) {
   return v ? Math.round(v).toLocaleString("fr-FR") : "";
 }
