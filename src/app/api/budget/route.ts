@@ -8,6 +8,17 @@ import { nextMonthKey, type CloseDecision } from "@/lib/closeMonth";
 import { loadWorkspaceSnapshot } from "@/lib/workspace";
 import { jsonError } from "@/lib/utils";
 import { publishWorkspace } from "@/lib/events";
+import { syncPctEnvelopes } from "@/lib/budget/envelopeSplit";
+
+const asArray = (v: unknown) => (Array.isArray(v) ? v : []);
+
+function syncedEnvelopes(incomes: unknown, pct: unknown, envelopes: unknown) {
+  return syncPctEnvelopes({
+    incomes: asArray(incomes),
+    pct: (pct && typeof pct === "object" ? pct : {}) as Record<string, number>,
+    envelopes: asArray(envelopes),
+  });
+}
 
 function incomeSum(incomes: unknown) {
   if (!Array.isArray(incomes)) return 0;
@@ -112,6 +123,16 @@ export async function PATCH(req: NextRequest) {
       return jsonError("Ce mois est clôturé : plus de modifications possibles.");
     }
 
+    const touchesAmounts =
+      body.incomes !== undefined || body.pct !== undefined || body.envelopes !== undefined;
+    const updatedEnvelopes = touchesAmounts
+      ? syncedEnvelopes(
+          body.incomes ?? existing?.incomes,
+          body.pct ?? existing?.pct,
+          body.envelopes ?? existing?.envelopes,
+        )
+      : null;
+
     // upsert évite le crash P2002 si 2 onglets / React Strict Mode créent le même mois
     await prisma.budgetMonth.upsert({
       where: {
@@ -122,7 +143,7 @@ export async function PATCH(req: NextRequest) {
         month: body.month,
         incomes: (body.incomes || []) as unknown as Prisma.InputJsonValue,
         pct: pct as unknown as Prisma.InputJsonValue,
-        envelopes: envelopes as unknown as Prisma.InputJsonValue,
+        envelopes: syncedEnvelopes(body.incomes, pct, envelopes) as unknown as Prisma.InputJsonValue,
         started: body.started === true,
         createdFrom: body.createdFrom || "new",
       },
@@ -131,8 +152,8 @@ export async function PATCH(req: NextRequest) {
           ? { incomes: body.incomes as unknown as Prisma.InputJsonValue }
           : {}),
         ...(body.pct !== undefined ? { pct: body.pct as unknown as Prisma.InputJsonValue } : {}),
-        ...(body.envelopes !== undefined
-          ? { envelopes: body.envelopes as unknown as Prisma.InputJsonValue }
+        ...(updatedEnvelopes
+          ? { envelopes: updatedEnvelopes as unknown as Prisma.InputJsonValue }
           : {}),
         // On ne peut que démarrer (pas repasser en prévision via cet endpoint).
         ...(body.started === true ? { started: true } : {}),

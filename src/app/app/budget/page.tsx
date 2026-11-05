@@ -19,6 +19,17 @@ import {
   type CreateBudgetMode,
 } from "@/lib/client/ensureBudget";
 import { exportBudgetPdf } from "@/lib/client/exportBudgetPdf";
+import {
+  catPctLeft,
+  catPctSum,
+  equalPctSplit,
+  formatPct,
+  isPctSplit,
+  setEnvPct,
+  syncPctEnvelopes,
+  toAmountSplit,
+  toPctSplit,
+} from "@/lib/budget/envelopeSplit";
 import { findPrevBudget, type CloseDecision } from "@/lib/closeMonth";
 import type { Category } from "@/lib/defaults";
 import { fmtPct, moisDe, money, monthLabel } from "@/lib/utils";
@@ -27,6 +38,7 @@ import { CloseMonthSheet } from "@/components/budget/CloseMonthSheet";
 import { EnvDetailSheet, RetraitSheet } from "@/components/budget/EnvelopeSheets";
 import { MonthWithdrawals } from "@/components/budget/MonthWithdrawals";
 import { ResetBudgetChoice } from "@/components/budget/ResetBudgetChoice";
+import { PctInput, SplitModeToggle } from "@/components/budget/EnvelopeSplit";
 import { useWorkspace } from "@/components/providers/WorkspaceProvider";
 import { AppIcon } from "@/components/ui/AppIcon";
 import { Button } from "@/components/ui/Button";
@@ -38,6 +50,7 @@ type Envelope = {
   cat: string;
   name: string;
   planned: number;
+  sharePct?: number;
   share?: string;
   ownerId?: string | null;
   goalId?: string | null;
@@ -141,6 +154,17 @@ function EnvelopeCategoryBlock({
   const planned = catPlannedSum(budget, category.id);
   const room = catRoomLeft(budget, category.id);
   const over = Math.max(0, planned - ceiling);
+  const pctMode = isPctSplit(envelopes, category.id);
+  const pctUsed = catPctSum(envelopes, category.id);
+  const pctLeft = catPctLeft(envelopes, category.id);
+  const saveSplit = (next: Envelope[]) =>
+    onSaveEnvelopes(syncPctEnvelopes<Envelope>({ ...budget, envelopes: next }));
+  const changeSplitMode = (toPct: boolean) =>
+    saveSplit(
+      toPct
+        ? toPctSplit<Envelope>({ ...budget, envelopes }, category.id)
+        : toAmountSplit(envelopes, category.id),
+    );
   const pages = Math.max(1, Math.ceil(envs.length / ENV_PAGE_SIZE));
   const safePage = Math.min(page, pages);
   const from = envs.length ? (safePage - 1) * ENV_PAGE_SIZE + 1 : 0;
@@ -176,6 +200,9 @@ function EnvelopeCategoryBlock({
 
       {open && (
         <div className="cat-body">
+          {!readOnly && envs.length > 0 && (
+            <SplitModeToggle pctMode={pctMode} onChange={changeSplitMode} />
+          )}
           <div className="cat-budget" aria-label={`Budget ${category.name}`}>
             <div>
               <span className="k">Budget catégorie</span>
@@ -187,6 +214,7 @@ function EnvelopeCategoryBlock({
               <span className="k">Déjà prévu</span>
               <span className="v">
                 <Money v={planned} />
+                {pctMode && <span className="muted"> · {formatPct(pctUsed)}</span>}
               </span>
             </div>
             <div>
@@ -196,7 +224,24 @@ function EnvelopeCategoryBlock({
               </span>
             </div>
           </div>
-          {over > 0 ? (
+          {pctMode ? (
+            <div className="cat-budget-msg split-msg">
+              <span className="muted">
+                {pctLeft > 0
+                  ? `Il reste ${formatPct(pctLeft)} (${money(room)}) à répartir.`
+                  : "100 % réparti. Les montants suivent automatiquement le budget de la catégorie."}
+              </span>
+              {!readOnly && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => saveSplit(equalPctSplit(envelopes, category.id))}
+                >
+                  Parts égales
+                </Button>
+              )}
+            </div>
+          ) : over > 0 ? (
             <p className="cat-budget-msg error-text" role="alert">
               Plafond dépassé de {money(over)}. Réduisez une ou plusieurs enveloppes.
             </p>
@@ -216,7 +261,7 @@ function EnvelopeCategoryBlock({
           {envs.length > 0 && (
             <div className="env-edit env-head">
               <span />
-              <span className="c">Prévu</span>
+              <span className="c">{pctMode ? "Part" : "Prévu"}</span>
               <span className="c">Dépensé</span>
               <span className="c">Restant</span>
               <span />
@@ -246,7 +291,27 @@ function EnvelopeCategoryBlock({
                     )}
                   </small>
                 </div>
-                {readOnly ? (
+                {pctMode ? (
+                  <div className="env-pct">
+                    {readOnly ? (
+                      <strong>{formatPct(e.sharePct ?? 0)}</strong>
+                    ) : (
+                      <PctInput
+                        value={e.sharePct ?? 0}
+                        max={catPctLeft(envelopes, e.cat, e.id)}
+                        onClamp={(raw, next) =>
+                          onNotify(
+                            `${formatPct(raw)} saisis → maximum ${formatPct(next)} pour « ${e.name} ».`,
+                          )
+                        }
+                        onCommit={(v) => saveSplit(setEnvPct(envelopes, e.id, v))}
+                      />
+                    )}
+                    <small>
+                      <Money v={e.planned} />
+                    </small>
+                  </div>
+                ) : readOnly ? (
                   <div className="c">
                     <Money v={e.planned} />
                   </div>
@@ -391,6 +456,7 @@ export default function BudgetPage() {
   const [closeOpen, setCloseOpen] = useState(false);
   const [draftName, setDraftName] = useState("");
   const [draftPlanned, setDraftPlanned] = useState(0);
+  const [draftPct, setDraftPct] = useState(0);
   const [confirmDel, setConfirmDel] = useState(false);
   const [sheetErr, setSheetErr] = useState("");
   const [openCats, setOpenCats] = useState<Record<string, boolean> | null>(null);
@@ -588,6 +654,7 @@ export default function BudgetPage() {
     setSheet({ mode: "create", cat, maxPlanned: room });
     setDraftName("");
     setDraftPlanned(0);
+    setDraftPct(0);
     setConfirmDel(false);
     setSheetErr("");
   };
@@ -596,6 +663,7 @@ export default function BudgetPage() {
     setSheet({ mode: "edit", env });
     setDraftName(env.name);
     setDraftPlanned(env.planned);
+    setDraftPct(env.sharePct ?? 0);
     setConfirmDel(false);
     setSheetErr("");
   };
@@ -611,6 +679,13 @@ export default function BudgetPage() {
     const name = draftName.trim();
     if (!name) {
       setSheetErr("Indiquez un nom d’enveloppe.");
+      return;
+    }
+
+    if (sheetPctMode) {
+      await save({ envelopes: pctSheetEnvelopes(name) });
+      notify(sheet.mode === "create" ? "Enveloppe créée" : "Enveloppe mise à jour");
+      closeSheet();
       return;
     }
 
@@ -655,6 +730,26 @@ export default function BudgetPage() {
       : sheet
         ? catRoomLeft(b, sheet.env.cat, sheet.env.id)
         : 0;
+
+  const sheetPctMode =
+    sheet?.mode === "create"
+      ? isPctSplit(envelopes, sheet.cat)
+      : typeof sheet?.env.sharePct === "number";
+
+  const sheetPctMax =
+    sheet?.mode === "create"
+      ? catPctLeft(envelopes, sheet.cat)
+      : sheet
+        ? catPctLeft(envelopes, sheet.env.cat, sheet.env.id)
+        : 0;
+
+  function pctSheetEnvelopes(name: string): Envelope[] {
+    const sharePct = Math.min(Math.max(0, draftPct), sheetPctMax);
+    if (sheet?.mode === "create") {
+      return [...envelopes, { ...newEnvelope(sheet.cat, name), sharePct }];
+    }
+    return envelopes.map((e) => (e.id === sheet?.env.id ? { ...e, name, sharePct } : e));
+  }
 
   const isDraft = !b.started;
   const isClosed = b.closed;
@@ -908,12 +1003,22 @@ export default function BudgetPage() {
                 onChange={(e) => setDraftName(e.target.value)}
                 placeholder="Ex. Alimentation"
               />
-              <MoneyInput
-                id="env-planned"
-                label={`Montant prévu (max ${money(sheetMax)})`}
-                value={draftPlanned}
-                onChange={(v) => setDraftPlanned(Math.min(Math.max(0, v), sheetMax))}
-              />
+              {sheetPctMode ? (
+                <PctInput
+                  id="env-pct"
+                  label={`Part du budget catégorie (max ${formatPct(sheetPctMax)})`}
+                  value={draftPct}
+                  max={sheetPctMax}
+                  onCommit={setDraftPct}
+                />
+              ) : (
+                <MoneyInput
+                  id="env-planned"
+                  label={`Montant prévu (max ${money(sheetMax)})`}
+                  value={draftPlanned}
+                  onChange={(v) => setDraftPlanned(Math.min(Math.max(0, v), sheetMax))}
+                />
+              )}
               {sheetErr && <p className="error-text">{sheetErr}</p>}
               {sheet.mode === "edit" && (
                 <div className="sheet-danger">
