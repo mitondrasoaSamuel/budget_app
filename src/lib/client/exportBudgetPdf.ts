@@ -2,8 +2,51 @@ import { envStats, getCats, monthTotals, monthTx } from "@/lib/budgetMath";
 import type { WorkspaceSnapshot } from "@/lib/workspace";
 import { fmtNum, fmtPct, money, monthLabel } from "@/lib/utils";
 
-type Envelope = { id: string; cat: string; name: string; planned: number };
+type Envelope = {
+  id: string;
+  cat: string;
+  name: string;
+  planned: number;
+  ownerId?: string | null;
+};
 type Income = { source: string; amount: number; memberId?: string };
+type PdfMember = WorkspaceSnapshot["members"][number];
+
+/** Stats d’un membre sur les dépenses perso : enveloppes liées d’abord, sinon ses retraits. */
+function memberPersoLine(
+  ws: WorkspaceSnapshot,
+  month: string,
+  member: PdfMember,
+  persoEnvs: Envelope[],
+  persoCatId: string,
+  catAlloc: number,
+  memberCount: number,
+) {
+  const matched = persoEnvs.filter(
+    (e) =>
+      e.ownerId === member.localId ||
+      e.name.trim().toLowerCase() === member.name.trim().toLowerCase(),
+  );
+  if (matched.length) {
+    return matched.reduce(
+      (acc, e) => {
+        const st = envStats(ws, month, e);
+        return {
+          name: member.name,
+          part: acc.part + st.planned,
+          spent: acc.spent + st.spent,
+          rest: acc.rest + st.rest,
+        };
+      },
+      { name: member.name, part: 0, spent: 0, rest: 0 },
+    );
+  }
+  const part = Math.round(catAlloc / Math.max(1, memberCount));
+  const spent = monthTx(ws, month)
+    .filter((tx) => tx.cat === persoCatId && tx.ownerId === member.localId)
+    .reduce((a, tx) => a + (Number(tx.amount) || 0), 0);
+  return { name: member.name, part, spent, rest: part - spent };
+}
 
 function pdfEsc(x: unknown) {
   return String(x ?? "")
@@ -276,22 +319,20 @@ export async function exportBudgetPdf(ws: WorkspaceSnapshot, month: string): Pro
   if (couple && persoCat) {
     const persoEnvs = envelopes.filter((e) => e.cat === persoCat.id);
     const members = ws.members;
-    const memberLines = members.map((m) => {
-      const part = Math.round((t.alloc[persoCat.id] || 0) / Math.max(1, members.length));
-      const own = monthTx(ws, month)
-        .filter((tx) => tx.cat === persoCat.id && tx.scope !== "common" && tx.ownerId === m.localId)
-        .reduce((a, tx) => a + tx.amount, 0);
-      const commonSpent = monthTx(ws, month)
-        .filter((tx) => tx.cat === persoCat.id && tx.scope === "common")
-        .reduce((a, tx) => a + tx.amount, 0);
-      const spent = own + Math.round(commonSpent / Math.max(1, members.length));
-      // if no perso envs, still show split
-      void persoEnvs;
-      return { name: m.name, part, spent, rest: part - spent };
-    });
+    const memberLines = members.map((m) =>
+      memberPersoLine(
+        ws,
+        month,
+        m,
+        persoEnvs,
+        persoCat.id,
+        t.alloc[persoCat.id] || 0,
+        members.length,
+      ),
+    );
     const pTot = memberLines.reduce((a, x) => a + x.part, 0);
     const sTot = memberLines.reduce((a, x) => a + x.spent, 0);
-    const rTot = pTot - sTot;
+    const rTot = memberLines.reduce((a, x) => a + x.rest, 0);
     persoBlock = `<h2>${pdfEsc(persoCat.name)} — Répartition</h2>
       <p class="lead">Le budget ${pdfEsc(persoCat.name.toLowerCase())} de ${pdfEsc(money(t.alloc[persoCat.id]))} est suivi par membre.</p>
       <table>
