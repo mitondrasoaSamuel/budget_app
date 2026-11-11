@@ -2472,15 +2472,37 @@ table.t .r {
     text-align: left;
   }
 
+  /* Nom en haut ; Prévu / Dépensé / Restant / actions en dessous (données déjà dans le DOM). */
   .env-edit {
-    grid-template-columns: minmax(0, 1fr) 120px 40px;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr) minmax(0, 0.85fr) 36px;
+    gap: 6px 8px;
+  }
+
+  .env-edit > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .env-edit .field,
+  .env-edit .env-pct {
+    margin: 0;
+    min-width: 0;
   }
 
   .env-edit .c {
+    font-size: 12.5px;
+  }
+
+  .env-edit small {
     display: none;
   }
 
   .env-edit.env-head {
+    display: grid;
+    padding-bottom: 2px;
+  }
+
+  .env-edit.env-head > :first-child,
+  .env-edit.env-head > :last-child {
     display: none;
   }
 
