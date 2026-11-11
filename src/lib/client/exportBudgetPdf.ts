@@ -1,4 +1,4 @@
-import { envStats, getCats, monthTotals, monthTx } from "@/lib/budgetMath";
+import { catRoomLeft, envStats, getCats, monthTotals, monthTx } from "@/lib/budgetMath";
 import type { WorkspaceSnapshot } from "@/lib/workspace";
 import { fmtNum, fmtPct, money, monthLabel } from "@/lib/utils";
 
@@ -262,14 +262,18 @@ export async function exportBudgetPdf(ws: WorkspaceSnapshot, month: string): Pro
   const pctRows = cats
     .map((c) => {
       const pct = Number(b.pct[c.id]) || 0;
-      return `<tr><td>${pdfEsc(c.name)}</td><td class="r">${pdfEsc(fmtPct(pct))}</td><td class="r">${pdfEsc(money(t.alloc[c.id]))}</td></tr>`;
+      const room = catRoomLeft(b, c.id);
+      return `<tr><td>${pdfEsc(c.name)}</td><td class="r">${pdfEsc(fmtPct(pct))}</td><td class="r">${pdfEsc(money(t.alloc[c.id]))}</td><td class="r">${pdfEsc(money(room))}</td></tr>`;
     })
     .join("");
+  const roomTotal = cats.reduce((a, c) => a + catRoomLeft(b, c.id), 0);
 
   const catBlocks = cats
     .map((c, idx) => {
       const envs = envelopes.filter((e) => e.cat === c.id);
       if (!envs.length) return "";
+      const ceiling = t.alloc[c.id] || 0;
+      const room = catRoomLeft(b, c.id);
       const lines = envs.map((e) => {
         const st = envStats(ws, month, e);
         return {
@@ -288,12 +292,19 @@ export async function exportBudgetPdf(ws: WorkspaceSnapshot, month: string): Pro
         `${c.name} — Dépensé et reste`,
       );
       const n = idx + 3;
+      const unassignedRow =
+        room > 0
+          ? `<tr><td>Non réparti (pas encore assigné)</td><td class="r">${pdfEsc(money(room))}</td><td class="r">—</td><td class="r">${pdfEsc(money(room))}</td></tr>`
+          : "";
       return `<h2>${n}. ${pdfEsc(c.name)} — Dépenses et reste</h2>
+      <p class="lead">Budget catégorie ${pdfEsc(money(ceiling))} · Déjà prévu ${pdfEsc(money(ceiling - room))} · Reste à répartir <strong>${pdfEsc(money(room))}</strong></p>
       <table>
         <thead><tr><th>Poste</th><th class="r">Budget initial</th><th class="r">Dépensé</th><th class="r">Reste</th></tr></thead>
         <tbody>
           ${lines.map((x) => x.row).join("")}
+          ${unassignedRow}
           <tr class="total"><td>Total enveloppe ${pdfEsc(c.name)}</td><td class="r">${pdfEsc(money(totP))}</td><td class="r">${pdfEsc(money(totS))}</td><td class="r">${pdfEsc(money(totR))}</td></tr>
+          <tr class="total"><td>Total catégorie (avec non réparti)</td><td class="r">${pdfEsc(money(ceiling))}</td><td class="r">${pdfEsc(money(totS))}</td><td class="r">${pdfEsc(money(totR + room))}</td></tr>
         </tbody>
       </table>
       ${chart}`;
@@ -394,10 +405,10 @@ export async function exportBudgetPdf(ws: WorkspaceSnapshot, month: string): Pro
   <h2>2. Répartition par catégorie</h2>
   <div class="two-col">
   <table>
-    <thead><tr><th>Catégorie</th><th class="r">%</th><th class="r">Montant</th></tr></thead>
+    <thead><tr><th>Catégorie</th><th class="r">%</th><th class="r">Montant</th><th class="r">Non réparti</th></tr></thead>
     <tbody>
       ${pctRows}
-      <tr class="total"><td>Total</td><td class="r">100&nbsp;%</td><td class="r">${pdfEsc(money(t.income))}</td></tr>
+      <tr class="total"><td>Total</td><td class="r">100&nbsp;%</td><td class="r">${pdfEsc(money(t.income))}</td><td class="r">${pdfEsc(money(roomTotal))}</td></tr>
     </tbody>
   </table>
   ${pie}
